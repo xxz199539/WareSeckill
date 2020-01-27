@@ -1,6 +1,11 @@
+env="local"
+
 [mysql]
-mysqlUser = "root"
-mysqlPassword = 123456
-mysqlHost = "192.168.1.6"
-mysqlPort = 3306
-mysqlDbName = "ware_seckill"
+mysqlUser="root"
+mysqlPassword=123456
+mysqlHost="127.0.0.1"
+mysqlPort=3306
+mysqlDbName="ware_seckill"
+
+[secret]
+key="qwer1234"

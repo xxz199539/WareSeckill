@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="../../public/css/site.css">
+        <title>Boom Shakalaka</title>
+    </head>
+
+    <body >
+    <script>
+        function setSrcQuery(e, q) {
+            var src  = e.src;
+            var p = src.indexOf('?');
+            if (p >= 0) {
+                src = src.substr(0, p);
+            }
+            e.src = src + "?" + q
+        }
+        function reload() {
+            setSrcQuery(document.getElementById('image'), "reload=" + (new Date()).getTime());
+            return false;
+        }
+    </script>
+
+    {{yield}}
+
+    </body>
+
+</html>

@@ -21,13 +21,13 @@
                             </tr>
                             </thead>
                             <tbody>
-                            {{range $i, $v := .order}}
+                            {{range $i, $v := .orders}}
                             <tr>
                                 <td class="user-avatar cell-detail user-info">{{$v.Id}}</td>
                                 <td class="cell-detail"></td>
-                                <td class="milestone"> {{$v.productName}}
+                                <td class="milestone"> {{$v.ProductName}}
                                 </td>
-                                <td class="cell-detail">{{ if eq $v.orderStatus "1"}} 已发货 {{else}} 未发货 {{end}}</td>
+                                <td class="cell-detail">{{ if eq $v.Order.OrderStatus 1}} 已发货 {{else}} 未发货 {{end}}</td>
                             </tr>
                             {{end}}
                             </tbody>

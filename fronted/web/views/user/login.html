@@ -1,0 +1,19 @@
+<div style="">
+    <div style="width: 400px;margin:0 auto;">
+        <form action="/user/login" method="POST">
+            <div class="container">
+                <label><b>用户名</b></label>
+                <input type="text" placeholder="Enter Username" name="userName" required>
+
+                <label><b>密码</b></label>
+                <input type="password" placeholder="Enter Password" name="password" required>
+                <p><img id=image src="/captcha/{{.CaptchaId}}.png" alt="Captcha image"></p>
+                <img src="../../public/img/refresh.jpg" width="20px" onclick="reload()" height="20px" style="margin-left: 95%">
+                <input type=hidden name=captchaId value="{{.CaptchaId}}"><br>
+                <label><b>验证码</b></label>
+                <input type="text" name=captchaSolution required>
+                <button type="submit">登录</button>
+            </div>
+        </form>
+    </div>
+</div>

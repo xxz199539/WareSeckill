@@ -11,7 +11,7 @@ type IOrderService interface {
 	Update(*models.Order) error
 	SelectOneById(int64) (*models.Order, error)
 	SelectAll() ([]*models.Order, error)
-	SelectManyWithInfo()(map[int]map[string]string, error)
+	SelectManyWithInfo()([]*models.OrderGroup, error)
 }
 
 type OrderService struct {
@@ -43,6 +43,6 @@ func (o *OrderService)SelectAll()([]*models.Order, error) {
 
 }
 
-func (o *OrderService)SelectManyWithInfo()(map[int]map[string]string, error) {
+func (o *OrderService)SelectManyWithInfo()([]*models.OrderGroup, error) {
 	return o.orderRepository.SelectManyWithInfo()
 }

@@ -1,8 +1,10 @@
 package main
 
-import "WareSeckill/RabbitMQ"
+import (
+	"WareSeckill/RabbitMQ"
+)
 
 func main() {
-	rabbitmq := RabbitMQ.NewRabbitMQSimple("Simple")
+	rabbitmq := RabbitMQ.NewRabbitMQSimple("")
 	rabbitmq.ConsumerSimple()
 }

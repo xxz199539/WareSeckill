@@ -1,66 +1,118 @@
 package common
 
 import (
+	"WareSeckill/models"
 	"errors"
-	"reflect"
-	"strconv"
-	"time"
+	"github.com/kataras/iris"
+	"golang.org/x/crypto/bcrypt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"sync"
 )
 
-func DataToStructByTagSql(data map[string]string, obj interface{}){
-	objValue := reflect.ValueOf(obj).Elem()
-	for i := 0; i < objValue.NumField(); i++ {
-		//获取sql对应的值
-		value := data[objValue.Type().Field(i).Tag.Get("sql")]
-		//获取对应字段的名称
-		name := objValue.Type().Field(i).Name
-		//获取对应字段类型
-		structFieldType := objValue.Field(i).Type()
-		//获取变量类型，也可以直接写"string类型"
-		val := reflect.ValueOf(value)
-		var err error
-		if structFieldType != val.Type() {
-			//类型转换
-			val, err = TypeConversion(value, structFieldType.Name()) //类型转换
-			if err != nil {
-
-			}
-		}
-		//设置类型值
-		objValue.FieldByName(name).Set(val)
-	}
+var AccessControlGlobal =  &AccessControl{
+	SourcesArray: make(map[int]interface{}),
+	RWMutex:      sync.RWMutex{},
 }
 
-func TypeConversion(value string, ntype string) (reflect.Value, error) {
-	if ntype == "string" {
-		return reflect.ValueOf(value), nil
-	} else if ntype == "time.Time" {
-		t, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.Local)
-		return reflect.ValueOf(t), err
-	} else if ntype == "Time" {
-		t, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.Local)
-		return reflect.ValueOf(t), err
-	} else if ntype == "int" {
-		i, err := strconv.Atoi(value)
-		return reflect.ValueOf(i), err
-	} else if ntype == "int8" {
-		i, err := strconv.ParseInt(value, 10, 64)
-		return reflect.ValueOf(int8(i)), err
-	} else if ntype == "int32" {
-		i, err := strconv.ParseInt(value, 10, 64)
-		return reflect.ValueOf(int64(i)), err
-	} else if ntype == "int64" {
-		i, err := strconv.ParseInt(value, 10, 64)
-		return reflect.ValueOf(i), err
-	} else if ntype == "float32" {
-		i, err := strconv.ParseFloat(value, 64)
-		return reflect.ValueOf(float32(i)), err
-	} else if ntype == "float64" {
-		i, err := strconv.ParseFloat(value, 64)
-		return reflect.ValueOf(i), err
+var HashConsistent = &Consistent{
+	circle:         make(map[uint32]string),
+	VirtualNodeNum: 20,
+}
+
+func init(){
+	once.Do(func() {
+		for _, v := range HostArray {
+			HashConsistent.Add(v)
+		}
+	})
+}
+
+func ValidatePassword(hashedPassword, password string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func GenerateHashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+//设置全局cookie
+func GlobalCookie(ctx iris.Context, name string, value string) {
+	ctx.SetCookie(&http.Cookie{Name: name, Value: value, Path: "/", MaxAge:3600})
+}
+
+func AuthValidate(ctx iris.Context) {
+	userId := ctx.GetCookie("userId")
+	if userId == "" {
+		ctx.Redirect("/user/login")
+	}
+	ctx.Next()
+}
+
+func ProductReviewCount(userId, productId int, ip string) (int64, error) {
+	data := &models.ReviewCount{
+		ProductId: productId,
+		UserId:    userId,
+		UserIp:    ip,
+	}
+	affected, err := Engine.Insert(data)
+	if err != nil {
+		return 0, err
+	}
+	return affected, nil
+}
+
+// 获取本机IP地址
+func GetIntranceIp()(string ,error)  {
+	addrs,err:=net.InterfaceAddrs()
+	if err !=nil {
+		return "",err
 	}
 
-	//else if .......增加其他一些类型的转换
+	for _,address:= range addrs{
+		//检查Ip地址判断是否回环地址
+		if ipnet,ok:=address.(*net.IPNet);ok&&!ipnet.IP.IsLoopback(){
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(),nil
+			}
+		}
+	}
 
-	return reflect.ValueOf(value), errors.New("未知的类型：" + ntype)
+	return "",errors.New("获取地址异常")
+}
+
+func CurlUrl(uri string, req *http.Request) (response *http.Response,body []byte,err error) {
+	hashedUId, err := req.Cookie("userId")
+	if err != nil {
+			return
+		}
+	client := &http.Client{}
+	req, err = http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	req.AddCookie(&http.Cookie{
+		Name:       "userId",
+		Value:      hashedUId.Value,
+		Path:       "/",
+		MaxAge:     3600,
+	})
+	response, err = client.Do(req)
+	defer func() {
+		_ = response.Body.Close()
+	}()
+	body, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+	return response, body, nil
 }

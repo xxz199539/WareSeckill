@@ -1,9 +1,13 @@
 package RabbitMQ
 
 import (
+	"WareSeckill/models"
+	"WareSeckill/services"
+	"encoding/json"
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
+	"time"
 )
 
 const MQURL = "amqp://charter:xxz199439@127.0.0.1:5672/charter"
@@ -56,7 +60,7 @@ func NewRabbitMQSimple (queueName string) *RabbitMQ {
 	return NewRabbitMQ(queueName, "", "")
 }
 //简单模式Step2:生产者
-func (r *RabbitMQ) PublishSimple(message string) {
+func (r *RabbitMQ) PublishSimple(message string) error{
 	// 1.先申请队列，如果找不到队列则新建队列，保证消息能发送到队列中
     _, err := r.channel.QueueDeclare(
     	r.QueueName,
@@ -67,7 +71,7 @@ func (r *RabbitMQ) PublishSimple(message string) {
     	nil, // 额外属性
     	)
     if err != nil {
-    	fmt.Println(err)
+    	return err
 	}
 	// 2.发送消息到队列中
 	err = r.channel.Publish(
@@ -80,8 +84,9 @@ func (r *RabbitMQ) PublishSimple(message string) {
 			Body:            []byte(message),
 		})
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
+	return nil
 }
 
 func (r *RabbitMQ) ConsumerSimple() {
@@ -121,6 +126,77 @@ func (r *RabbitMQ) ConsumerSimple() {
 	log.Println("[*] waiting for message, to exit press CTRL+C")
     <- forever
 }
+
+
+func (r *RabbitMQ) ConsumerSimpleByService(orderService services.IOrderService, productService services.IProductService) {
+	// 1.先申请队列，如果找不到队列则新建队列，保证消息能发送到队列中
+	_, err := r.channel.QueueDeclare(
+		r.QueueName,
+		false, // 消息是否持久化
+		false, // 消息是否自动删除
+		false, // 是否具有排他性，只有自己能访问
+		false,// 是否阻塞
+		nil, // 额外属性
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = r.channel.Qos(
+		1, //当前消费者一次能接受的最大消息数量
+		0, //服务器传递的最大容量（以八位字节为单位）
+		false, //如果设置为true 对channel可用
+		)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 接受消息
+	msms, err := r.channel.Consume(
+		r.QueueName,
+		"", // 用来区分多个消费者
+		false, // 是否自动应答
+		false, // 是否具有排他性
+		false, // true:表示不能讲同一个connection中发送的消息传递给这个connection中的消费者
+		false, // true：表示阻塞
+		nil, // 其他属性
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("=================")
+	forever := make(chan bool)
+	go func() {
+		for msg := range msms {
+			// 实现要处理的逻辑函数
+			log.Printf("Receive a messagee %s", msg.Body)
+			newMessage := &models.Message{}
+			err := json.Unmarshal(msg.Body, newMessage)
+			if err != nil {
+				log.Fatal(err)
+			}
+			productNum, err := productService.SubProductNumberOne(newMessage.UserId)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if productNum >= 1 {
+				newOrder := &models.Order{
+					UserId:      int(newMessage.UserId),
+					ProductId:   int(newMessage.ProductId),
+					OrderStatus: models.SUCCESS,
+					CreateTime:  time.Now(),
+				}
+				_, err = orderService.Insert(newOrder)
+				if err!= nil {
+					log.Fatal(err)
+				}
+			}
+			_ = msg.Ack(false)
+		}
+
+	}()
+	log.Println("[*] waiting for message, to exit press CTRL+C")
+	<- forever
+}
+
 
 // 订阅模式创建实例
 func NewRabbitMQPubSub(exchange string) *RabbitMQ {

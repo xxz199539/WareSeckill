@@ -14,11 +14,11 @@ type OrderController struct {
 }
 
 func (o *OrderController)GetAll() mvc.View{
-	orderArray,_ := o.OrderService.SelectAll()
+	orderArray,_ := o.OrderService.SelectManyWithInfo()
 	return mvc.View{
 		Name:"order/view.html",
 		Data:iris.Map{
-			"order": orderArray,
+			"orders": orderArray,
 		},
 	}
 }
