@@ -21,7 +21,7 @@ func main() {
 	template := iris.HTML("./fronted/web/views", ".html").Layout("shared/layout.html").Reload(true)
 	app.RegisterView(template)
 	// 设置模板目标
-	app.HandleDir("/public", "./fronted/web/public")
+	app.StaticWeb("/public", "./fronted/web/public")
 	// 出现异常跳转到制定页面
 	app.OnAnyErrorCode(func(ctx iris.Context) {
 		ctx.ViewData("message", ctx.Values().GetStringDefault("message", "访问页面出错"))

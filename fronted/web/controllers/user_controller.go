@@ -35,7 +35,7 @@ func (u *UserController) GetLogin() mvc.View {
 
 
 // 注册提交表单
-func (u *UserController) PostRegister() mvc.View{
+func (u *UserController) PostRegister(){
 	user := &models.User{}
 	if err := u.Ctx.ReadForm(user); err != nil {
 		u.Ctx.Application().Logger().Debug(err)
@@ -43,16 +43,11 @@ func (u *UserController) PostRegister() mvc.View{
 	id, err := u.UserServer.AddUser(user)
 	if id ==0 || err != nil {
 		u.Ctx.Application().Logger().Debug(err)
-		return mvc.View{
-			Name:"/shared/error.html",
-			Data: iris.Map{
-				"Message": err.Error(),
-			},
-		}
+		u.Ctx.Redirect("/user/login")
+		return
 	}
-	return mvc.View{
-		Name:"/user/login.html",
-	}
+	u.Ctx.Redirect("/user/login")
+	return
 }
 
 func (u *UserController)PostLogin(){

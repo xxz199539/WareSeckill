@@ -19,7 +19,7 @@ func main() {
     template := iris.HTML("./backend/web/views", ".html").Layout("shared/layout.html").Reload(true)
 	app.RegisterView(template)
     // 设置模板目标
-    app.HandleDir("/assets", "./backend/web/assets")
+    //app.StaticHandler("/assets", "./backend/web/assets")
     // 出现异常跳转到制定页面
     app.OnAnyErrorCode(func(ctx iris.Context) {
 		ctx.ViewData("message", ctx.Values().GetStringDefault("message", "访问页面出错"))
@@ -28,13 +28,12 @@ func main() {
 	})
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
-	accessControl := common.NewAccessControl()
 	hashConsistent := common.NewConsistent()
 	for _, v := range common.HostArray {
 		hashConsistent.Add(v)
 	}
     // 注册控制器
-    productManager := repositories.NewProductManager(accessControl, hashConsistent)
+    productManager := repositories.NewProductManager()
     productService := services.NewProductService(productManager)
     productParty := app.Party("/product")
     product := mvc.New(productParty)

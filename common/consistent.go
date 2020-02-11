@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"hash/crc32"
 	"sort"
 	"strconv"
@@ -125,6 +124,6 @@ func (c *Consistent) Get(name string) (string, error) {
 	}
 	key := c.hashKey(name)
 	i := c.search(key)
-	fmt.Println(c.circle)
+	//fmt.Println(c.circle)
 	return c.circle[c.sortedHashes[i]], nil
 }

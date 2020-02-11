@@ -14,8 +14,8 @@ import (
 	"sync"
 )
 
+// 提供cookie验证，提供rabbitMQ生产者服务
 var sum int64
-var productNum int64
 var mutex sync.Mutex
 
 var accessControl = &common.AccessControl{
@@ -90,7 +90,6 @@ func Generate(w http.ResponseWriter, r *http.Request) error {
 }
 
 func OrderProduct(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("================")
 	mutex.Lock()
 	defer mutex.Unlock()
 	queryForm, err := url.ParseQuery(r.URL.RawQuery)
@@ -102,7 +101,7 @@ func OrderProduct(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("false"))
 		return
 	}
-	if sum < 1000 {
+	if sum < 10000 {
 		productId := queryForm["productId"]
 		userId, err := r.Cookie("userId")
 		if err != nil {
